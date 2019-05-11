@@ -42,6 +42,6 @@ int
 ztoi (char *zoned, int len)
 {
 	char *utf = malloc(len + 1);
-	size_t ret = ebcdic2utf (zoned, len, utf);
+	ebcdic2utf (zoned, len, utf);
 	return atoi (utf);
 }

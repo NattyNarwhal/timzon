@@ -1,6 +1,5 @@
 CC := gcc
-# This means a GNU iconv dep
-CFLAGS := -gxcoff -maix64
+CFLAGS := -Wall -Werror -gxcoff -maix64
 LDFLAGS :=
 
 PGM := timzon

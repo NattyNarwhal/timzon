@@ -1,7 +1,7 @@
 /* EBCDIC */
 #define ALL { 0x5C, 0xC1, 0xD3, 0xD3, 0, 0, 0, 0, 0 }
 #define FORMAT_RTMZ0100 { 0xD9, 0xE3, 0xD4, 0xE9, 0xF0, 0xF1, 0xF0, 0xF0 }
-#define FORMAT_RTMZ0200 { 0xD9, 0xE3, 0xD4, 0xE9, 0xF0, 0xF1, 0xF0, 0xF0 }
+#define FORMAT_RTMZ0200 { 0xD9, 0xE3, 0xD4, 0xE9, 0xF0, 0xF2, 0xF0, 0xF0 }
 
 /* These probably don't match their names in XPF headers */
 typedef struct {
@@ -25,6 +25,15 @@ typedef struct {
 	int entry_length;
 	/* Reserved area */
 } RTMZ0100_header;
+
+typedef struct {
+	int bytes_returned;
+	int bytes_available;
+	int num_available;
+	int offset;
+	int num_returned;
+	/* Reserved area */
+} RTMZ0200_header;
 
 /*
  * char values for numerics are zoned decimals, even the one-byte booleans
@@ -54,6 +63,15 @@ typedef struct {
 	int daylight_shift;
 	int year_offset;
 	char alternative_name[128];
+	/* Reserved area */
 } RTMZ0100_entry;
+
+typedef struct {
+	int length;
+	int tz_string_offset;
+	int tz_string_length;
+	char name[10];
+	/* Reserved area; TZ string after this */
+} RTMZ0200_entry;
 
 void qwcrtvtz(void*, int*, char*, char*, ERRC0100*);

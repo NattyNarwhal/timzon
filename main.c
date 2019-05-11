@@ -58,22 +58,61 @@ print_RTMZ0100_entry (RTMZ0100_entry *item)
 	printf ("----\n");
 }
 
+void
+print_RTMZ0200_entry (RTMZ0200_entry *item)
+{
+	char name[10], *tz_string, *tz_string_ebcdic;
+	ebcdic2utf (item->name, 10, name);
+	tz_string = malloc(item->tz_string_length + 1);
+	tz_string_ebcdic = (char*)item + item->tz_string_offset;
+	ebcdic2utf (tz_string_ebcdic, item->tz_string_length, tz_string);
+	printf ("%s\t%s\n", name, tz_string);
+	free (tz_string);
+}
+
+void
+get_RTMZ0100_entries (char *name)
+{
+	int outlen = 1000000;
+	char *out = malloc(outlen);
+	char format[] = FORMAT_RTMZ0100;
+	ERRC0100 err = { 0 };
+	err.bytes_in = sizeof (err);
+	
+	qwcrtvtz((void*)out, &outlen, format, name, &err);
+	RTMZ0100_header *hdr = (RTMZ0100_header*)out;
+	printf ("# RTMZ0100\n");
+	for (int i = 0; i < hdr->num_returned; i++) {
+		RTMZ0100_entry *item = (RTMZ0100_entry*)(out + hdr->offset + (hdr->entry_length * i));
+		print_RTMZ0100_entry (item);
+	}
+}
+
+void
+get_RTMZ0200_entries (char *name)
+{
+	int outlen = 1000000;
+	char *out = malloc(outlen);
+	char format[] = FORMAT_RTMZ0200;
+	ERRC0100 err = { 0 };
+	err.bytes_in = sizeof (err);
+	
+	qwcrtvtz((void*)out, &outlen, format, name, &err);
+	RTMZ0200_header *hdr = (RTMZ0200_header*)out;
+	fprintf (stderr, "offset %d len %d\n", hdr->offset, hdr->num_returned);
+	RTMZ0200_entry *item = (RTMZ0200_entry*)(out + hdr->offset);
+	printf ("# RTMZ0200\n");
+	for (int i = 0; i < hdr->num_returned; i++) {
+		print_RTMZ0200_entry (item);
+		/* moving to next is diff from 0100 because where len is */
+		item = (RTMZ0200_entry*)((char*)item + item->length);
+	}
+}
+
 int
 main (int argc, char **argv)
 {
-	char *out = malloc(1000000);
-	int outlen = 1000000;
-	char format[] = FORMAT_RTMZ0100;
 	char name[] = ALL;
-	ERRC0100 err = { 0 };
-	err.bytes_in = sizeof (err);
-	qwcrtvtz((void*)out, &outlen, format, name, &err);
-	// write (1, out, outlen);
-	RTMZ0100_header *hdr = (RTMZ0100_header*)out;
-	for (int i = 0; i < hdr->num_returned; i++) {
-		RTMZ0100_entry *item;
-		item = (RTMZ0100_entry*)(out + hdr->offset + (hdr->entry_length * i));
-		print_RTMZ0100_entry (item);
-	}
+	get_RTMZ0200_entries (name);
 	return 0;
 }
