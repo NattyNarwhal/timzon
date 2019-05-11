@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "qwcrtvtz.h"
 #include "ebcdic.h"
@@ -81,7 +83,6 @@ get_RTMZ0100_entries (char *name)
 	
 	qwcrtvtz((void*)out, &outlen, format, name, &err);
 	RTMZ0100_header *hdr = (RTMZ0100_header*)out;
-	printf ("# RTMZ0100\n");
 	for (int i = 0; i < hdr->num_returned; i++) {
 		RTMZ0100_entry *item = (RTMZ0100_entry*)(out + hdr->offset + (hdr->entry_length * i));
 		print_RTMZ0100_entry (item);
@@ -99,9 +100,7 @@ get_RTMZ0200_entries (char *name)
 	
 	qwcrtvtz((void*)out, &outlen, format, name, &err);
 	RTMZ0200_header *hdr = (RTMZ0200_header*)out;
-	fprintf (stderr, "offset %d len %d\n", hdr->offset, hdr->num_returned);
 	RTMZ0200_entry *item = (RTMZ0200_entry*)(out + hdr->offset);
-	printf ("# RTMZ0200\n");
 	for (int i = 0; i < hdr->num_returned; i++) {
 		print_RTMZ0200_entry (item);
 		/* moving to next is diff from 0100 because where len is */
@@ -109,10 +108,46 @@ get_RTMZ0200_entries (char *name)
 	}
 }
 
+static void
+usage (char *argv0)
+{
+	fprintf(stderr, "usage: %s [-pP] [timzon]\n", argv0);
+}
+
 int
 main (int argc, char **argv)
 {
-	char name[] = ALL;
-	get_RTMZ0200_entries (name);
+	int ch;
+	bool print_tzi = false, print_tzs = false;
+	while ((ch = getopt (argc, argv, "pP")) != -1) {
+		switch (ch) {
+		case 'p': /* print human-readable TZ info */
+			print_tzi = true;
+			break;
+		case 'P': /* print PASE $TZ string */
+			print_tzs = true;
+			break;
+		default:
+			usage (argv [0]);
+			return 1;
+		}
+	}
+	/* are any args active? */
+	if (!(print_tzi == true || print_tzs == true)) {
+		usage (argv [0]);
+		return 1;
+	}
+	if (argc == optind) {
+		char name[] = ALL;
+		if (print_tzi == true) get_RTMZ0100_entries (name);
+		if (print_tzs == true) get_RTMZ0200_entries (name);
+	} else {
+		for (int i = optind; i < argc; i++) {
+			char name[11];
+			utf2ebcdic (argv[i], 10, name);
+			if (print_tzi == true) get_RTMZ0100_entries (name);
+			if (print_tzs == true) get_RTMZ0200_entries (name);
+		}
+	}
 	return 0;
 }
